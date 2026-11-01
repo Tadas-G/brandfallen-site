@@ -19,11 +19,10 @@
   <main class="wrap page">
     <p class="label">Episode 1: 23andMe</p>
     <h1>How 23andMe Lost Everything</h1>
-    <button class="player" data-id="1cm6mOMT1Tg" aria-label="Play video">
+    <a class="player" href="https://youtu.be/1cm6mOMT1Tg" aria-label="Watch on YouTube">
       <img src="/thumbs/23andme.jpg" alt="" width="1280" height="720">
       <span class="play"></span>
-    </button>
-    <p class="note">Playing the video loads it from YouTube.</p>
+    </a>
     <p class="lead">23andMe was once worth about $6 billion. In 2025, its business and the genetic data of about 15 million customers were sold in a bankruptcy court for $305 million. This is how it happened, and who ended up with the data.</p>
     <p><a class="button" href="https://www.youtube.com/@Brandfallen?sub_confirmation=1">Subscribe on YouTube</a></p>
     <h2>Chapters</h2>
@@ -108,16 +107,6 @@
       <a class="button" href="https://www.youtube.com/@Brandfallen?sub_confirmation=1">Subscribe to get it first</a>
     </section>
   </main>
-  <script>
-    document.querySelector('.player').addEventListener('click', function () {
-      var frame = document.createElement('iframe');
-      frame.src = 'https://www.youtube-nocookie.com/embed/' + this.dataset.id + '?autoplay=1';
-      frame.title = 'Video player';
-      frame.allow = 'autoplay; encrypted-media; picture-in-picture';
-      frame.allowFullscreen = true;
-      this.replaceWith(frame);
-    });
-  </script>
   <footer>
     <div class="wrap">
       <a href="/privacy.html">Privacy Policy</a>
