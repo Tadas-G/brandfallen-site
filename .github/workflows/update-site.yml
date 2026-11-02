@@ -1,0 +1,69 @@
+name: Update site with new episodes
+
+on:
+  schedule:
+    # 20:00 Europe/Vilnius on even days (2, 4, 6 ... 30).
+    # GitHub cron is UTC: 17:00 UTC in summer (EEST), 18:00 UTC in winter (EET).
+    # Both run; the guard below lets only the one matching local 20:00 continue.
+    - cron: "0 17 2-30/2 * *"
+    - cron: "0 18 2-30/2 * *"
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - ".github/workflows/update-site.yml"
+      - "scripts/update_site.py"
+      - "next.json"
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: update-site
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check it is 20:00 in Vilnius
+        id: guard
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python3 - <<'EOF'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          sched = os.environ.get("SCHEDULE", "")
+          run = "true"
+          if sched:
+              offset_h = datetime.now(ZoneInfo("Europe/Vilnius")).utcoffset().total_seconds() / 3600
+              wanted_utc = 20 - int(offset_h)  # 17 in summer, 18 in winter
+              run = "true" if sched.split()[1] == str(wanted_utc) else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"run={run}\n")
+          print("run =", run)
+          EOF
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.run == 'true'
+
+      - name: Add new episodes
+        if: steps.guard.outputs.run == 'true'
+        run: python3 scripts/update_site.py
+
+      - name: Commit and push
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then echo "Nothing to commit"; exit 0; fi
+          git config user.name "brandfallen-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add new episode(s) from YouTube"
+          git push
+          # Ask GitHub Pages to rebuild (harmless if Pages builds on push anyway)
+          curl -sS -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" || true
