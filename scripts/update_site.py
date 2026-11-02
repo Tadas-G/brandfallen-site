@@ -88,7 +88,7 @@ def parse_description(desc):
             continue
         urls = URL_RE.findall(line)
         for u in urls:
-            if "youtube.com" not in u and "youtu.be" not in u:
+            if not any(d in u for d in ("youtube.com", "youtu.be", "brandfallen.com")):
                 links.append(u.rstrip(").,"))
         text = URL_RE.sub("", line).strip(" :-–—")
         if not line:
@@ -98,7 +98,8 @@ def parse_description(desc):
             continue
         if urls and len(text) < 40:
             continue  # line that is mostly a link
-        if line.startswith("#") or line.lower().startswith(("chapters", "sources", "timestamps")):
+        if line.startswith("#") or line.lower().startswith(
+                ("chapters", "sources", "timestamps", "this video tells", "brandfallen episode")):
             continue
         block.append(text)
     if block:
