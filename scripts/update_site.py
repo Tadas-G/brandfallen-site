@@ -17,13 +17,19 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 CHANNEL_ID = "UC09vQjSwfZYH0H24m8DQTMA"
-FEED = f"https://www.youtube.com/feeds/videos.xml?channel_id={CHANNEL_ID}"
+# YouTube's feed endpoint intermittently answers 404/5xx for a valid channel.
+# The "uploads" playlist (UC... -> UU...) serves the same entries, so try both.
+FEEDS = [
+    f"https://www.youtube.com/feeds/videos.xml?channel_id={CHANNEL_ID}",
+    f"https://www.youtube.com/feeds/videos.xml?playlist_id=UU{CHANNEL_ID[2:]}",
+]
 SUBSCRIBE = "https://www.youtube.com/@Brandfallen?sub_confirmation=1"
 ROOT = Path(__file__).resolve().parent.parent
 NS = {
@@ -42,6 +48,21 @@ def fetch(url, binary=False):
     with urllib.request.urlopen(req, timeout=30) as r:
         data = r.read()
     return data if binary else data.decode("utf-8")
+
+
+def fetch_feed(rounds=4):
+    """Fetch the channel feed, retrying both URLs with backoff on transient errors."""
+    last = None
+    for attempt in range(rounds):
+        if attempt:
+            time.sleep(15 * attempt)  # 15s, 30s, 45s
+        for url in FEEDS:
+            try:
+                return fetch(url)
+            except (urllib.error.URLError, TimeoutError) as e:
+                last = e
+                print(f"feed attempt {attempt + 1} failed ({e}): {url}")
+    raise last
 
 
 def is_short(video_id):
@@ -205,7 +226,7 @@ def episode_page(v, n, slug, nb):
 
 
 def main():
-    feed = ET.fromstring(fetch(FEED))
+    feed = ET.fromstring(fetch_feed())
     videos = []
     for e in feed.findall("a:entry", NS):
         group = e.find("media:group", NS)
