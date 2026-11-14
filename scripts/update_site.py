@@ -50,12 +50,12 @@ def fetch(url, binary=False):
     return data if binary else data.decode("utf-8")
 
 
-def fetch_feed(rounds=4):
+def fetch_feed(rounds=12):
     """Fetch the channel feed, retrying both URLs with backoff on transient errors."""
     last = None
     for attempt in range(rounds):
         if attempt:
-            time.sleep(15 * attempt)  # 15s, 30s, 45s
+            time.sleep(min(60, 15 * attempt))  # 15s, 30s, 45s, then 60s (~10 min total)
         for url in FEEDS:
             try:
                 return fetch(url)
