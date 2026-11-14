@@ -62,6 +62,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Add new episode(s) from YouTube"
+          # main may have moved while the script ran; replay our commit on top
+          git pull --rebase origin "${{ github.ref_name }}"
           git push
           # Ask GitHub Pages to rebuild (harmless if Pages builds on push anyway)
           curl -sS -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
