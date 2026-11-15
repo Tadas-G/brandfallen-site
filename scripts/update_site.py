@@ -40,6 +40,7 @@ NS = {
 UA = {"User-Agent": "Mozilla/5.0 (brandfallen-site updater)"}
 CHAPTER_RE = re.compile(r"^\s*((?:\d{1,2}:)?\d{1,2}:\d{2})\s*[-–—|:]?\s*(.+)$")
 URL_RE = re.compile(r"https?://\S+")
+OWN_PAGE_RE = re.compile(r"https?://(?:www\.)?brandfallen\.com/([a-z0-9][a-z0-9-]{1,59})/")
 NEXT_RE = re.compile(r'<section class="next">.*?</section>', re.S)
 
 
@@ -252,7 +253,12 @@ def main():
             print(f"skip short: {v['title']}")
             continue
         n += 1
-        if announced and announced.lower() != "coming soon" and announced.lower() in v["title"].lower():
+        # Every video description carries "Full story and sources: https://brandfallen.com/<slug>/".
+        # That link is what viewers click, so the page must live at exactly that address.
+        own = OWN_PAGE_RE.search(v["description"])
+        if own:
+            slug = own.group(1)
+        elif announced and announced.lower() != "coming soon" and announced.lower() in v["title"].lower():
             slug = slugify(announced)
         else:
             slug = slugify(v["title"])
